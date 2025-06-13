@@ -1,4 +1,7 @@
 import pandas as pd;
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.interpolate import interp1d
 
 #Abrindo arquivo
 with open("C:\\Users\\adrya\Desktop\\3° semestre\\Modelagem de Fenômenos Fisicos\\somativa_ra3\\integral_derivada_mff\\1045.txt", "r", encoding="utf-8") as f:
@@ -33,4 +36,91 @@ df['Tensao'] = df['Carga'] / area_secao_transversal #Mpa(N/mm²)
 #Calculando deformação
 df['Deformação'] = df['Travessa Horizontal'] / comprimento_inicial #mm
 
-print(df)
+#plotando gáfico (Tensão) x (Deformação)
+plt.plot(df['Deformação'], df['Tensao'], color='blue')
+plt.xlabel('Deformação')
+plt.ylabel('Tensão')
+plt.title('Gáfico Tensão x Deformação')
+plt.grid(True)
+plt.show()
+
+#Encontrando ponto de escoamento com MÉTODO OFFSET 0.2%
+
+#Selecionando trecho elástico
+#Identificando o melhor valor de n que maximiza o coeficiente R² da regressão linear
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+melhor_r2 = 0
+melhor_n = 0
+for n in range(10, 100):
+    x = df["Deformação"][:n].values.reshape(-1, 1)
+    y = df["Tensao"][:n].values
+    model = LinearRegression().fit(x, y)
+    y_pred = model.predict(x)
+    r2 = r2_score(y, y_pred)
+    if r2 > melhor_r2:
+        melhor_r2 = r2
+        melhor_n = n
+epsilon_elastico = df["Deformação"][:melhor_n]
+tensao_elastico = df["Tensao"][:melhor_n]
+
+#Fazendo a regressão linear para encontrar o Módulo de Elasticidade E
+coef = np.polyfit(epsilon_elastico, tensao_elastico, 1)
+E = coef[0]
+
+#Criando linha offset (E * (ε - 0.002))
+offset = 0.002
+linha_offset = E * (df["Deformação"] - offset)
+
+#Encontrando a interseção da linha offset com a curva real
+dif = df["Tensao"] - linha_offset
+idx = np.where(np.diff(np.sign(dif)))[0][0]  # onde cruza
+
+#Interpolando para maior precisão
+eps1, eps2 = df["Deformação"].iloc[idx], df["Deformação"].iloc[idx+1]
+sig1, sig2 = df["Tensao"].iloc[idx], df["Tensao"].iloc[idx+1]
+dif1, dif2 = dif.iloc[idx], dif.iloc[idx+1]
+
+intersecao_eps = np.interp(0, [dif1, dif2], [eps1, eps2])
+intersecao_sig = np.interp(intersecao_eps, df["Deformação"], df["Tensao"])
+
+#plotando gáfico (Tensão) x (Deformação) com ponto de escoamento
+
+plt.figure(figsize=(10,6))
+plt.plot(df["Deformação"], df["Tensao"], label="Curva Tensão x Deformação", color='blue')
+plt.plot(df["Deformação"], linha_offset, '--', label="Linha Offset 0.2%", color='red')
+plt.plot(intersecao_eps, intersecao_sig, 'ro', label="Ponto de Escoamento")
+
+plt.xlabel("Deformação")
+plt.ylabel("Tensão (MPa)")
+plt.title("Gráfico Tensão x Deformação com Escoamento")
+plt.xlim(0, 0.140)
+plt.ylim(0, 950)   
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+#Exibindo o ponto de escoamento
+print(f"Ponto aproximado de escoamento: Deformação = {intersecao_eps:.6f}, Tensão = {intersecao_sig:.2f} MPa") 
+
+"""O ponto de escoamento, determinado pelo método do offset de 0,2%, foi encontrado em deformação de 0.017022 e tensão de 559.60 MPa. Esse ponto marca o início da deformação plástica no material, ou seja, a partir desse momento a deformação passa a ser permanente e o material não retorna mais à sua forma original mesmo após a retirada da carga."""
+
+
+"""Justificativa
+    O ponto de escoamento corresponde ao início da deformação plástica, momento em que a curva tensão x deformação deixa de ser linear e começa a se curvar, indicando que o material não retorna mais à sua forma original.
+
+    Visualmente, essa transição pode ser percebida no gráfico pela mudança na inclinação da curva, que passa do regime elástico linear para o regime plástico não-linear.
+
+    Matematicamente, essa mudança de comportamento pode ser detectada analisando a derivada da curva tensão em relação à deformação (dσ/dε):
+
+    No regime elástico, a derivada é aproximadamente constante, igual ao módulo de elasticidade (E).
+
+    No ponto de escoamento, essa derivada começa a diminuir, indicando perda da rigidez do material.
+
+    Para maior precisão, pode-se usar o método do escoamento por offset de 0,2%, onde uma linha paralela ao trecho linear inicial é traçada com um deslocamento na deformação, e o ponto de escoamento é a interseção dessa linha com a curva.
+
+    Assim, combinando a observação visual da mudança de curvatura da curva com a análise da derivada e/ou aplicação do método do offset, podemos identificar o ponto de escoamento com maior precisão.
+"""
+
