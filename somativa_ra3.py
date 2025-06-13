@@ -2,7 +2,10 @@ import pandas as pd;
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
+#Parte 1 - Leitura e tratamento de dados
 #Abrindo arquivo
 with open("C:\\Users\\adrya\Desktop\\3° semestre\\Modelagem de Fenômenos Fisicos\\somativa_ra3\\integral_derivada_mff\\1045.txt", "r", encoding="utf-8") as f:
     linhas = f.readlines()  
@@ -36,20 +39,11 @@ df['Tensao'] = df['Carga'] / area_secao_transversal #Mpa(N/mm²)
 #Calculando deformação
 df['Deformação'] = df['Travessa Horizontal'] / comprimento_inicial #mm
 
-#plotando gáfico (Tensão) x (Deformação)
-plt.plot(df['Deformação'], df['Tensao'], color='blue')
-plt.xlabel('Deformação')
-plt.ylabel('Tensão')
-plt.title('Gáfico Tensão x Deformação')
-plt.grid(True)
-plt.show()
+#Parte 2 - Geração de gráfico tensão x deformação
 
 #Encontrando ponto de escoamento com MÉTODO OFFSET 0.2%
-
 #Selecionando trecho elástico
 #Identificando o melhor valor de n que maximiza o coeficiente R² da regressão linear
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
 
 melhor_r2 = 0
 melhor_n = 0
@@ -124,3 +118,45 @@ print(f"Ponto aproximado de escoamento: Deformação = {intersecao_eps:.6f}, Ten
     Assim, combinando a observação visual da mudança de curvatura da curva com a análise da derivada e/ou aplicação do método do offset, podemos identificar o ponto de escoamento com maior precisão.
 """
 
+# Parte 3 - Região Elástica e Módulo de Elasticidade
+# Selecionando manualmente os pontos da região elástica antes do escoamento (ex: até deformação 0.014)
+limite_elastico = 0.016
+regiao_elastica = df[df["Deformação"] <= limite_elastico]
+
+x = regiao_elastica["Deformação"]
+y = regiao_elastica["Tensao"]
+
+# O módulo de elasticidade E é o coeficiente angular da reta na região elástica, que corresponde à derivada da tensão em relação à deformação  (dσ/dε) nesta região linear da curva.
+# Achando Regressão linear (reta da Lei de Hooke)
+coef = np.polyfit(x, y, 1)
+E = coef[0]  # derivada (pendente) da curva tensão x deformação
+
+# Criando reta da regressão
+reta = np.polyval(coef, x)
+
+# Plotando a curva com a reta da região elástica
+plt.figure(figsize=(10, 6))
+plt.plot(df["Deformação"], df["Tensao"], label="Curva Tensão x Deformação", color='blue')
+plt.plot(x, reta, label="Regressão Linear (Região Elástica)", color='red', linestyle='--')
+plt.xlabel("Deformação")
+plt.ylabel("Tensão (MPa)")
+plt.title("Região Elástica - Módulo de Elasticidade")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+print(f"Módulo de Elasticidade (E) = {E:.2f} MPa") #Módulo de Elasticidade (E) = 33557.17 MPa
+
+
+
+"""
+    Referências Bibliográficas
+        Livro-texto (ABNT):
+        CALLISTER, William D.; RETHWISCH, David G. Ciência e Engenharia de Materiais: uma introdução. 10. ed. Porto Alegre: Bookman, 2018.
+
+        Norma de ensaio de tração (ASTM):
+        ASTM INTERNATIONAL. ASTM E8/E8M‑16a: Standard Test Methods for Tension Testing of Metallic Materials. West Conshohocken, PA: ASTM International, 2016.
+
+        Norma internacional equivalente (ISO):
+        ISO. ISO 6892‑1:2019 – Metallic materials — Tensile testing — Part 1: Method of test at room temperature. Genebra: International Organization for Standardization, 2019.
+"""
