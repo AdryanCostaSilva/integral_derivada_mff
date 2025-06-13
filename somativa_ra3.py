@@ -5,10 +5,7 @@ from scipy.interpolate import interp1d
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
-#Parte 1 - Leitura e tratamento de dados
-#Abrindo arquivo
-with open("C:\\Users\\adrya\Desktop\\3° semestre\\Modelagem de Fenômenos Fisicos\\somativa_ra3\\integral_derivada_mff\\1045.txt", "r", encoding="utf-8") as f:
-    linhas = f.readlines()  
+#Parte 1 - Leitura e tratamento de dados 
 
 #Lendo arquivo
 df = pd.read_csv("C:\\Users\\adrya\\Desktop\\3° semestre\\Modelagem de Fenômenos Fisicos\\somativa_ra3\\integral_derivada_mff\\1045.txt", sep='\t', decimal=',',skiprows=8, names=["Travessa Horizontal", "Carga", "Tempo"])
