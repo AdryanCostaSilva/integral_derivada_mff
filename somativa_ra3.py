@@ -115,23 +115,23 @@ print(f"Ponto aproximado de escoamento: Deformação = {intersecao_eps:.6f}, Ten
     Assim, combinando a observação visual da mudança de curvatura da curva com a análise da derivada e/ou aplicação do método do offset, podemos identificar o ponto de escoamento com maior precisão.
 """
 
-# Parte 3 - Região Elástica e Módulo de Elasticidade
-# Selecionando manualmente os pontos da região elástica antes do escoamento (ex: até deformação 0.014)
+#Parte 3 - Região Elástica e Módulo de Elasticidade
+#Selecionando manualmente os pontos da região elástica antes do escoamento (ex: até deformação 0.014)
 limite_elastico = 0.016
 regiao_elastica = df[df["Deformação"] <= limite_elastico]
 
 x = regiao_elastica["Deformação"]
 y = regiao_elastica["Tensao"]
 
-# O módulo de elasticidade E é o coeficiente angular da reta na região elástica, que corresponde à derivada da tensão em relação à deformação  (dσ/dε) nesta região linear da curva.
-# Achando Regressão linear (reta da Lei de Hooke)
+#O módulo de elasticidade E é o coeficiente angular da reta na região elástica, que corresponde à derivada da tensão em relação à deformação  (dσ/dε) nesta região linear da curva.
+#Achando Regressão linear (reta da Lei de Hooke)
 coef = np.polyfit(x, y, 1)
 E = coef[0]  # derivada (pendente) da curva tensão x deformação
 
-# Criando reta da regressão
+#Criando reta da regressão
 reta = np.polyval(coef, x)
 
-# Plotando a curva com a reta da região elástica
+#Plotando a curva com a reta da região elástica
 plt.figure(figsize=(10, 6))
 plt.plot(df["Deformação"], df["Tensao"], label="Curva Tensão x Deformação", color='blue')
 plt.plot(x, reta, label="Regressão Linear (Região Elástica)", color='red', linestyle='--')
@@ -143,6 +143,44 @@ plt.legend()
 plt.show()
 
 print(f"Módulo de Elasticidade (E) = {E:.2f} MPa") #Módulo de Elasticidade (E) = 33557.17 MPa
+
+#Parte 4 - Identificação da região de deformação plástica
+
+#Considerando como região plástica os pontos após o limite elástico (ex: deformação > 0.016)
+limite_elastico = 0.016
+regiao_plastica = df[df["Deformação"] > limite_elastico]
+
+x_plast = regiao_plastica["Deformação"]
+y_plast = regiao_plastica["Tensao"]
+
+#Ajustando a função polinomial de grau 3 à região plástica
+coef_poli = np.polyfit(x_plast, y_plast, 3)
+polinomio = np.poly1d(coef_poli)
+
+#Gerando valores ajustados
+x_plot = np.linspace(x_plast.min(), x_plast.max(), 500)
+y_plot = polinomio(x_plot)
+
+#Plotando curva original e o ajuste na região plástica
+plt.figure(figsize=(10, 6))
+plt.plot(df["Deformação"], df["Tensao"], label="Curva Tensão x Deformação", color='blue')
+plt.plot(x_plot, y_plot, label="Ajuste Polinomial Grau 3 (Região Plástica)", color='orange', linestyle='--')
+plt.axvline(limite_elastico, color='gray', linestyle=':', label='Limite Elástico')
+plt.xlabel("Deformação")
+plt.ylabel("Tensão (MPa)")
+plt.title("Região Plástica com Ajuste Polinomial")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+"""
+A região de deformação plástica corresponde ao trecho da curva onde o material se deforma permanentemente, ou seja, não retorna à sua forma original após a remoção da carga.
+
+Para representar matematicamente esse comportamento, foi ajustada uma função polinomial de grau 3 aos dados experimentais após o limite elástico (ε > 0.016). Essa aproximação permite capturar a curvatura e a não linearidade típicas da resposta plástica dos materiais.
+
+Embora o modelo polinomial não represente perfeitamente todos os fenômenos físicos envolvidos, ele é útil para análises matemáticas e computacionais da curva tensão x deformação na região plástica.
+"""
 
 
 
