@@ -9,7 +9,7 @@ from sklearn.metrics import r2_score
 #Parte 1 - Leitura e tratamento de dados 
 
 #Lendo arquivo
-df = pd.read_csv("C:\\Users\\adrya\\Desktop\\3° semestre\\Modelagem de Fenômenos Fisicos\\somativa_ra3\\integral_derivada_mff\\1045.txt", sep='\t', decimal=',',skiprows=8, names=["Travessa Horizontal", "Carga", "Tempo"])
+df = pd.read_csv("1045.txt", sep='\t', decimal=',',skiprows=8, names=["Travessa Horizontal", "Carga", "Tempo"])
 
 #Substituindo "," por "."
 df = df.replace(",", ".", regex=True)
